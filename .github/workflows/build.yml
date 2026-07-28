@@ -26,6 +26,12 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Prepare web directory
+        run: |
+          mkdir -p www
+          cp index.html www/
+          cp capacitor.config.json www/ || true
+
       - name: Install dependencies
         run: npm install
 
