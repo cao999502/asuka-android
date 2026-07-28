@@ -37,7 +37,7 @@ jobs:
       - name: Generate app icons
         run: |
           npm install @capacitor/assets
-          npx capacitor-assets generate --android --icon-background-color '#0a0a14'
+          npx capacitor-assets generate --android'#0a0a14'
 
       - name: Add Android platform
         run: npx cap add android
