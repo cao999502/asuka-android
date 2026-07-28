@@ -1,7 +1,7 @@
 {
   "appId": "com.asuka.ai.chat",
   "appName": "明日香AI",
-  "webDir": ".",
+  "webDir": "www",
   "bundledWebRuntime": false,
   "plugins": {
     "SplashScreen": {
