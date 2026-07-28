@@ -30,10 +30,14 @@ jobs:
         run: |
           mkdir -p www
           cp index.html www/
-          cp capacitor.config.json www/ || true
 
       - name: Install dependencies
         run: npm install
+
+      - name: Generate app icons
+        run: |
+          npm install @capacitor/assets
+          npx capacitor-assets generate --android --icon-background-color '#0a0a14'
 
       - name: Add Android platform
         run: npx cap add android
