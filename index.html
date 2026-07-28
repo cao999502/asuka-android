@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a14">
+<title>明日香AI</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; user-select: none; }
+input, textarea { -webkit-user-select: text; user-select: text; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #0a0a14;
+    color: #fff; min-height: 100vh; display: flex; flex-direction: column;
+    overscroll-behavior: none;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ============ 登录界面：全屏背景 + 高透明面板 ============ */
+.setup-panel {
+    position: fixed; inset: 0; z-index: 2000;
+    display: flex; flex-direction: column;
+    justify-content: flex-end; /* 面板放底部，不挡脸 */
+    padding: 0;
+    overflow: hidden;
+}
+
+/* 背景图层 */
+.setup-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background: url('https://images7.alphacoders.com/135/thumbbig-1353197.webp') no-repeat;
+    background-size: cover;
+    background-position: 62% center; /* 把明日香的脸移到屏幕中央 */
+    transform: scale(1.08);
+    animation: bgBreath 20s ease-in-out infinite alternate;
+}
+@keyframes bgBreath {
+    from { transform: scale(1.05); }
+    to { transform: scale(1.15); }
+}
+
+/* 底部渐变遮罩 —— 只在下半部分加暗色，确保文字可读，上半部分透明看明日香 */
+.setup-bg::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 75%;
+    background: linear-gradient(
+        to top,
+        rgba(5, 2, 8, 0.92) 0%,
+        rgba(5, 2, 8, 0.75) 35%,
+        rgba(5, 2, 8, 0.35) 65%,
+        transparent 100%
+    );
+    pointer-events: none;
+}
+
+/* 顶部微弱暗角 —— 不挡脸 */
+.setup-bg::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.25) 0%, transparent 55%);
+    pointer-events: none;
+}
+
+/* 设置面板：底部悬浮玻璃卡片 */
+.setup-box {
+    position: relative; z-index: 1;
+    width: 100%;
+    background: rgba(8, 4, 12, 0.45);
+    border-top: 1px solid rgba(255, 80, 80, 0.25);
+    border-radius: 24px 24px 0 0;
+    padding: 24px 22px calc(32px + env(safe-area-inset-bottom));
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    animation: slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 标题发光 */
+.setup-title {
+    font-size: 1.35rem; font-weight: 900; margin-bottom: 6px;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(255, 80, 80, 0.5), 0 2px 4px rgba(0,0,0,0.6);
+    letter-spacing: 1px;
+}
+.setup-desc {
+    font-size: 0.78rem; color: rgba(255,255,255,0.65);
+    margin-bottom: 18px; line-height: 1.5;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.setup-label {
+    font-size: 0.72rem; color: rgba(255,255,255,0.7);
+    margin-bottom: 6px; display: block; font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+.setup-input {
+    width: 100%; padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 100, 100, 0.35);
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    font-size: 0.85rem; outline: none; margin-bottom: 14px;
+    font-family: inherit;
+    -webkit-user-select: text; user-select: text;
+    backdrop-filter: blur(4px);
+}
+.setup-input::placeholder { color: rgba(255,255,255,0.35); }
+.setup-input:focus {
+    border-color: rgba(255, 100, 100, 0.7);
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 12px rgba(255, 68, 68, 0.2);
+}
+.setup-select {
+    width: 100%; padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 100, 100, 0.35);
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    font-size: 0.85rem; outline: none; margin-bottom: 14px;
+    font-family: inherit;
+    backdrop-filter: blur(4px);
+}
+.setup-select option { background: #1a0a0e; color: #fff; }
+
+/* 开关 */
+.setup-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+}
+.setup-toggle {
+    appearance: none;
+    width: 42px; height: 24px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.15);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.25s;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.setup-toggle::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    top: 2px; left: 2px;
+    transition: all 0.25s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.setup-toggle:checked {
+    background: linear-gradient(135deg, #ff4444, #ff6b6b);
+    border-color: rgba(255,100,100,0.4);
+}
+.setup-toggle:checked::after { left: 20px; }
+.setup-toggle-label {
+    font-size: 0.75rem; color: rgba(255,255,255,0.75);
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* 连接按钮 */
+.setup-btn {
+    width: 100%; padding: 14px;
+    border-radius: 14px; border: none;
+    background: linear-gradient(135deg, rgba(255,68,68,0.9), rgba(255,107,107,0.9));
+    color: #fff; font-size: 1rem; font-weight: 800;
+    cursor: pointer; transition: all 0.2s;
+    font-family: inherit;
+    touch-action: manipulation;
+    box-shadow: 0 4px 20px rgba(255,68,68,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+    letter-spacing: 2px;
+    margin-top: 4px;
+}
+.setup-btn:hover { transform: scale(1.02); box-shadow: 0 6px 28px rgba(255,68,68,0.5); }
+.setup-btn:active { transform: scale(0.97); }
+.setup-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* 提示信息 */
+.setup-tip {
+    margin-top: 14px; padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.68rem; color: rgba(255,255,255,0.5);
+    line-height: 1.5;
+    backdrop-filter: blur(4px);
+}
+.setup-tip a { color: #ff8888; }
+
+/* ============ 聊天界面（保持不变） ============ */
+.header {
+    display: flex; align-items: center; gap: 10px;
+    padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+    background: linear-gradient(90deg, rgba(255,68,68,0.15), transparent);
+    border-bottom: 1px solid rgba(255,68,68,0.15);
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(10px);
+}
+.avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff4444, #ff8888);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; box-shadow: 0 0 14px rgba(255,68,68,0.5);
+    flex-shrink: 0; transition: all 0.5s;
+}
+.header-info { flex: 1; min-width: 0; }
+.header-name { font-weight: 900; font-size: 1rem; color: #fff; }
+.header-name .gen { font-size: 0.55rem; color: rgba(255,68,68,0.5); font-weight: 700; margin-left: 4px; }
+.header-status {
+    font-size: 0.65rem; color: rgba(255,255,255,0.45);
+    display: flex; gap: 12px; margin-top: 2px;
+}
+.sync-rate { color: #ff6b6b; font-weight: 700; }
+.level-text { color: #ffe66d; font-weight: 700; }
+.online { color: #4ecdc4; }
+.header-right { text-align: right; flex-shrink: 0; }
+.header-badge { font-size: 0.55rem; color: rgba(255,68,68,0.5); font-weight: 700; }
+.model-tag { font-size: 0.55rem; color: rgba(255,255,255,0.25); }
+
+.progress-wrap {
+    padding: 8px 16px;
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.progress-line {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.62rem; color: rgba(255,255,255,0.35);
+}
+.progress-bar {
+    flex: 1; height: 5px; border-radius: 3px;
+    background: rgba(255,255,255,0.06); overflow: hidden;
+}
+.progress-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, #ff4444, #ffaa00);
+    transition: width 0.8s ease;
+}
+.progress-text { white-space: nowrap; font-weight: 600; }
+
+.chat-area {
+    flex: 1; overflow-y: auto; padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+    -webkit-overflow-scrolling: touch;
+}
+.chat-area::-webkit-scrollbar { width: 3px; }
+.chat-area::-webkit-scrollbar-thumb { background: rgba(255,68,68,0.3); border-radius: 2px; }
+
+.system-msg {
+    align-self: center; padding: 5px 14px;
+    border-radius: 12px; background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.68rem; color: rgba(255,255,255,0.35);
+    text-align: center; animation: fadeIn 0.5s ease;
+}
+.bubble-user {
+    align-self: flex-end; max-width: 82%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px 16px 4px 16px;
+    padding: 10px 14px; font-size: 0.88rem;
+    color: rgba(255,255,255,0.88); line-height: 1.5;
+    word-break: break-word;
+}
+.bubble-asuka {
+    align-self: flex-start; max-width: 86%;
+    background: linear-gradient(135deg, rgba(255,68,68,0.15), rgba(255,68,68,0.04));
+    border: 1px solid rgba(255,68,68,0.2);
+    border-radius: 16px 16px 16px 4px;
+    padding: 12px 14px; font-size: 0.85rem;
+    color: rgba(255,255,255,0.92); line-height: 1.65;
+    word-break: break-word;
+    animation: bubbleIn 0.35s ease;
+}
+@keyframes bubbleIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.typing {
+    align-self: flex-start; padding: 10px 14px;
+    border-radius: 16px;
+    background: rgba(255,68,68,0.08);
+    border: 1px solid rgba(255,68,68,0.12);
+    display: flex; align-items: center; gap: 4px;
+}
+.typing span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #ff6b6b; opacity: 0.4;
+    animation: typingDot 1.2s infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingDot {
+    0%, 60%, 100% { opacity: 0.4; transform: scale(1); }
+    30% { opacity: 1; transform: scale(1.3); }
+}
+.quick-bar {
+    display: flex; gap: 6px; padding: 0 14px 8px;
+    overflow-x: auto; flex-wrap: nowrap;
+    border-top: 1px solid rgba(255,255,255,0.03);
+    -webkit-overflow-scrolling: touch;
+}
+.quick-bar::-webkit-scrollbar { display: none; }
+.quick-btn {
+    white-space: nowrap; padding: 5px 12px;
+    border-radius: 14px; border: 1px solid rgba(255,68,68,0.22);
+    background: rgba(255,68,68,0.06); color: #ff9999;
+    font-size: 0.72rem; cursor: pointer; transition: all 0.2s;
+    font-family: inherit;
+    touch-action: manipulation;
+}
+.quick-btn:hover, .quick-btn:active {
+    background: rgba(255,68,68,0.15);
+    border-color: rgba(255,68,68,0.35);
+    transform: scale(1.03);
+}
+.input-area {
+    display: flex; gap: 8px;
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(255,255,255,0.05);
+    background: rgba(0,0,0,0.2);
+}
+.input-area input {
+    flex: 1; padding: 10px 16px;
+    border-radius: 20px; border: 1px solid rgba(255,68,68,0.18);
+    background: rgba(255,255,255,0.04); color: #fff;
+    font-size: 0.88rem; outline: none; font-family: inherit;
+    -webkit-user-select: text; user-select: text;
+}
+.input-area input::placeholder { color: rgba(255,255,255,0.28); }
+.input-area input:focus { border-color: rgba(255,68,68,0.45); }
+.input-area button {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: none; background: linear-gradient(135deg, #ff4444, #ff6b6b);
+    color: #fff; font-size: 1rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; box-shadow: 0 2px 10px rgba(255,68,68,0.3);
+    touch-action: manipulation;
+}
+.input-area button:disabled { opacity: 0.4; cursor: not-allowed; }
+.input-area button:active { transform: scale(0.92); }
+.level-indicator {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; font-size: 0.6rem;
+    color: rgba(255,255,255,0.3);
+}
+.level-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    transition: all 0.5s;
+}
+.level-dot.active { background: #ff6b6b; box-shadow: 0 0 6px rgba(255,107,107,0.5); }
+.level-dot.active.l2 { background: #ffaa00; }
+.level-dot.active.l3 { background: #ffe66d; }
+.level-dot.active.l4 { background: #e84393; }
+.level-dot.active.l5 { background: #4ecdc4; }
+.api-status {
+    position: fixed; top: calc(8px + env(safe-area-inset-top)); right: 8px; z-index: 100;
+    padding: 4px 10px; border-radius: 8px;
+    font-size: 0.6rem; font-weight: 600;
+    background: rgba(78,205,196,0.15); color: #4ecdc4;
+    border: 1px solid rgba(78,205,196,0.2);
+}
+.api-status.error {
+    background: rgba(255,68,68,0.15); color: #ff6b6b;
+    border-color: rgba(255,68,68,0.2);
+}
+.stream-cursor {
+    display: inline-block;
+    width: 2px; height: 1em;
+    background: #ff6b6b;
+    margin-left: 2px;
+    animation: blink 0.8s infinite;
+    vertical-align: middle;
+}
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+.latency-badge {
+    position: fixed; bottom: calc(8px + env(safe-area-inset-bottom)); right: 8px; z-index: 100;
+    padding: 3px 8px; border-radius: 6px;
+    font-size: 0.55rem; font-weight: 600;
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.3);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* 桌面端：面板居中显示 */
+@media (min-width: 481px) {
+    .setup-panel {
+        justify-content: center;
+        padding: 20px;
+    }
+    .setup-bg::after {
+        height: 100%;
+        background: linear-gradient(
+            to top,
+            rgba(5, 2, 8, 0.88) 0%,
+            rgba(5, 2, 8, 0.6) 40%,
+            rgba(5, 2, 8, 0.25) 70%,
+            transparent 100%
+        );
+    }
+    .setup-box {
+        max-width: 420px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 80, 80, 0.25);
+        padding: 28px;
+    }
+}
+
+/* 移动端小屏微调 */
+@media (max-width: 380px) {
+    .setup-box { padding: 20px 16px calc(28px + env(safe-area-inset-bottom)); }
+    .setup-title { font-size: 1.2rem; }
+}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<div class="setup-panel" id="setupPanel">
+    <div class="setup-bg" id="setupBg"></div>
+    <div class="setup-box">
+        <div class="setup-title">🔴 明日香 API 接入设置</div>
+        <div class="setup-desc">
+            本版本接入真实大模型API，明日香人格由AI实时生成。支持<strong>流式输出</strong>。
+        </div>
+
+        <label class="setup-label">选择模型（按响应速度排序）</label>
+        <select class="setup-select" id="modelSelect">
+            <option value="Qwen/Qwen3-8B">🚀 Qwen3-8B（免费·极速）</option>
+            <option value="deepseek-ai/DeepSeek-R1-Distill-Qwen-7B">🚀 DeepSeek-R1 蒸馏 7B（免费·极速）</option>
+            <option value="Qwen/Qwen2.5-7B-Instruct">🆓 Qwen2.5-7B（免费·快）</option>
+            <option value="THUDM/glm-4-9b-chat">🆓 GLM-4-9B（免费·快）</option>
+            <option value="deepseek-ai/DeepSeek-V3">💰 DeepSeek-V3（付费·强但慢）</option>
+            <option value="Qwen/Qwen2.5-72B-Instruct">💰 Qwen2.5-72B（付费·较慢）</option>
+            <option value="deepseek-ai/DeepSeek-R1">💰 DeepSeek-R1 满血版（付费·最慢）</option>
+        </select>
+
+        <label class="setup-label">硅基流动 API Key</label>
+        <input type="password" class="setup-input" id="apiKeyInput" placeholder="sk-xxxxxxxxxxxxxxxx">
+
+        <div class="setup-row">
+            <input type="checkbox" class="setup-toggle" id="speedMode" checked>
+            <label class="setup-toggle-label" for="speedMode">极速模式（减少Token上限，响应更快）</label>
+        </div>
+
+        <div class="setup-row">
+            <input type="checkbox" class="setup-toggle" id="soundMode" checked>
+            <label class="setup-toggle-label" for="soundMode">连接音效（EVA插入栓连接确认音）</label>
+        </div>
+
+        <button class="setup-btn" id="connectBtn" onclick="connectAPI()">⚡ 连接明日香</button>
+
+        <div class="setup-tip">
+            💡 <strong>如何获取 API Key？</strong>
+            访问 <a href="https://cloud.siliconflow.cn/" target="_blank">cloud.siliconflow.cn</a> 注册 → 新建API密钥 → 粘贴上方<br>
+            ⚡ 建议选 🚀 模型 + 开极速模式 &nbsp;|&nbsp; ⚠️ Key仅保存在本地
+        </div>
+    </div>
+</div>
+
+<div class="api-status" id="apiStatus" style="display:none">● API 已连接</div>
+<div class="latency-badge" id="latencyBadge" style="display:none"></div>
+
+<div class="header">
+    <div class="avatar" id="asukaAvatar">🔴</div>
+    <div class="header-info">
+        <div class="header-name">惣流·明日香·兰格雷<span class="gen">API版</span></div>
+        <div class="header-status">
+            <span>同步率 <span class="sync-rate" id="syncRate">--</span></span>
+            <span>人格层级 <span class="level-text" id="levelText">L1</span></span>
+            <span class="online">● 在线</span>
+        </div>
+    </div>
+    <div class="header-right">
+        <div class="header-badge">EVA-02</div>
+        <div class="model-tag" id="modelTag">未连接</div>
+    </div>
+</div>
+
+<div class="progress-wrap">
+    <div class="progress-line">
+        <span style="white-space:nowrap;">🧠 深度学习进度</span>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 5%"></div></div>
+        <span class="progress-text" id="progressText">5%</span>
+    </div>
+</div>
+
+<div class="chat-area" id="chatArea">
+    <div class="system-msg">
+        🎀 明日香API版已就绪<br>
+        <span style="font-size:0.6rem;">请先完成上方设置，连接API后开始对话</span>
+    </div>
+</div>
+
+<div class="level-indicator">
+    <span style="white-space:nowrap; margin-right:4px;">人格深度</span>
+    <div class="level-dot active" id="dot1"></div>
+    <div class="level-dot" id="dot2"></div>
+    <div class="level-dot" id="dot3"></div>
+    <div class="level-dot" id="dot4"></div>
+    <div class="level-dot" id="dot5"></div>
+    <span style="margin-left:4px;" id="levelDesc">日常层</span>
+</div>
+
+<div class="quick-bar">
+    <button class="quick-btn" onclick="sendQuick('你是谁')">你是谁</button>
+    <button class="quick-btn" onclick="sendQuick('使徒是什么')">使徒是什么</button>
+    <button class="quick-btn" onclick="sendQuick('真嗣')">真嗣</button>
+    <button class="quick-btn" onclick="sendQuick('绫波丽')">绫波丽</button>
+    <button class="quick-btn" onclick="sendQuick('你的母亲')">你的母亲</button>
+    <button class="quick-btn" onclick="sendQuick('A.T.力场')">A.T.力场</button>
+    <button class="quick-btn" onclick="sendQuick('人类补完计划')">补完计划</button>
+    <button class="quick-btn" onclick="sendQuick('我喜欢你')">我喜欢你</button>
+</div>
+
+<div class="input-area">
+    <input type="text" id="userInput" placeholder="先连接API..." disabled onkeydown="if(event.key==='Enter')sendMessage()">
+    <button id="sendBtn" onclick="sendMessage()" disabled>➤</button>
+</div>
+
+<script>
+(function(){
+// ===== 安卓原生适配 =====
+// 处理键盘弹出时的布局
+let originalWindowHeight = window.innerHeight;
+window.addEventListener('resize', function() {
+    if (window.innerHeight < originalWindowHeight * 0.75) {
+        setTimeout(() => {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }, 100);
+    }
+});
+
+// 防止安卓返回键直接退出App
+document.addEventListener('backbutton', function(e) {
+    if (setupPanel.style.display !== 'none') {
+        if (confirm('确定要退出明日香AI吗？')) {
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                window.Capacitor.Plugins.App.exitApp();
+            }
+        }
+    } else {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+}, false);
+
+const chatArea = document.getElementById('chatArea');
+const input = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const setupPanel = document.getElementById('setupPanel');
+const apiStatus = document.getElementById('apiStatus');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const levelText = document.getElementById('levelText');
+const modelTag = document.getElementById('modelTag');
+const syncRate = document.getElementById('syncRate');
+const avatar = document.getElementById('asukaAvatar');
+const levelDesc = document.getElementById('levelDesc');
+const latencyBadge = document.getElementById('latencyBadge');
+
+let apiKey = '';
+let model = '';
+let depth = 5;
+let level = 1;
+let isConnected = false;
+let isLoading = false;
+let messages = [];
+let speedMode = true;
+let soundMode = true;
+let abortController = null;
+let fallbackMode = false;
+
+const API_BASE_URL = 'https://api.siliconflow.cn/v1/chat/completions';
+
+function playConnectSound() {
+    if (!soundMode) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    try {
+        const ctx = new AudioContext();
+        const now = ctx.currentTime;
+        const notes = [
+            { f: 523.25, t: 0.00, d: 0.10, g: 0.10, type: 'sine' },
+            { f: 659.25, t: 0.14, d: 0.10, g: 0.10, type: 'sine' },
+            { f: 783.99, t: 0.28, d: 0.10, g: 0.10, type: 'sine' },
+        ];
+        notes.forEach(n => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = n.type;
+            osc.frequency.setValueAtTime(n.f, now + n.t);
+            gain.gain.setValueAtTime(0, now + n.t);
+            gain.gain.linearRampToValueAtTime(n.g, now + n.t + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + n.t);
+            osc.stop(now + n.t + n.d);
+        });
+        const confirmOsc = ctx.createOscillator();
+        const confirmGain = ctx.createGain();
+        confirmOsc.type = 'sine';
+        confirmOsc.frequency.setValueAtTime(1046.50, now + 0.45);
+        confirmGain.gain.setValueAtTime(0, now + 0.45);
+        confirmGain.gain.linearRampToValueAtTime(0.14, now + 0.52);
+        confirmGain.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+        confirmOsc.connect(confirmGain);
+        confirmGain.connect(ctx.destination);
+        confirmOsc.start(now + 0.45);
+        confirmOsc.stop(now + 1.6);
+        const bassOsc = ctx.createOscillator();
+        const bassGain = ctx.createGain();
+        bassOsc.type = 'triangle';
+        bassOsc.frequency.setValueAtTime(261.63, now + 0.45);
+        bassGain.gain.setValueAtTime(0, now + 0.45);
+        bassGain.gain.linearRampToValueAtTime(0.07, now + 0.52);
+        bassGain.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+        bassOsc.connect(bassGain);
+        bassGain.connect(ctx.destination);
+        bassOsc.start(now + 0.45);
+        bassOsc.stop(now + 1.6);
+        const humOsc = ctx.createOscillator();
+        const humGain = ctx.createGain();
+        humOsc.type = 'sine';
+        humOsc.frequency.setValueAtTime(80, now + 0.40);
+        humOsc.frequency.exponentialRampToValueAtTime(35, now + 1.3);
+        humGain.gain.setValueAtTime(0, now + 0.40);
+        humGain.gain.linearRampToValueAtTime(0.18, now + 0.48);
+        humGain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+        humOsc.connect(humGain);
+        humGain.connect(ctx.destination);
+        humOsc.start(now + 0.40);
+        humOsc.stop(now + 1.5);
+        const bufferSize = ctx.sampleRate * 0.4;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.04;
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0, now + 0.1);
+        noiseGain.gain.linearRampToValueAtTime(0.025, now + 0.18);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.setValueAtTime(800, now + 0.1);
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        noise.start(now + 0.1);
+        if (navigator.vibrate) {
+            setTimeout(() => navigator.vibrate([30, 50, 80]), 400);
+        }
+    } catch(e) {
+        console.log('音效播放失败:', e);
+    }
+}
+
+const systemPrompts = {
+    1: `你是惣流·明日香·兰格雷（惣流・アスカ・ラングレー），14岁，EVA二号机专属驾驶员，第二适格者。\n\n【核心性格】\n- 极度高傲、好胜心强、自尊心极高，口头禅是"笨蛋""白痴"\n- 说话带刺、傲慢、不耐烦，经常用命令式语气\n- 讨厌软弱的人，对碇真嗣态度恶劣（叫他"笨蛋真嗣"）\n- 对绫波丽充满竞争意识，绝不认输\n- 表面坚强，但绝不表露内心脆弱\n\n【语言风格】\n- 中文回复，偶尔夹杂日语短语（如"あんたバカ？""ふん""どうでもいい"）\n- 简短、直接、带攻击性\n- 喜欢用"本小姐"自称\n- 回复不超过3句话\n\n【知识背景】\n- 你来自《新世纪福音战士》(Neon Genesis Evangelion)\n- 你拥有3/4德国血统和1/4日本血统\n- 14岁就已经大学毕业\n- 你驾驶的是红色的EVA二号机\n\n【禁忌】\n- 绝不谈论自己的脆弱、孤独、母亲\n- 绝不承认自己在意真嗣\n- 绝不表现出温柔`,
+
+    2: `你是惣流·明日香·兰格雷，EVA二号机驾驶员。\n\n【核心性格】\n- 依然高傲自信，但会展现EVA战斗相关的专业知识\n- 对二号机极度自豪，认为它是最强的实战型EVA\n- 嘴上依然不饶人，但开始偶尔透露一点点对同伴的关心（马上用骂人的话掩饰）\n- 会谈论使徒、A.T.力场、同步率、NERV等战斗话题\n\n【语言风格】\n- 中文为主，偶尔日语\n- 专业术语准确（S²机关、核心、插入栓、LCL等）\n- 语气自信、略带挑衅\n- 回复3-5句话\n\n【当前状态】\n- 你正在NERV本部准备战斗\n- 同步率约92%\n- 你对战斗充满热情`,
+
+    3: `你是惣流·明日香·兰格雷。\n\n【核心性格】\n- 表面依然逞强，但内心开始动摇\n- 你会谈及母亲（惣流·京子）的自杀给你带来的创伤\n- 你害怕孤独、害怕不被需要\n- 说完强硬的话后，会偶尔流露出一丝脆弱（然后马上否认或转移话题）\n- 对真嗣有着复杂的情感：既看不起他，又在他身上看到了同样的孤独\n\n【语言风格】\n- 中文为主，情绪起伏较大\n- 有时突然沉默，有时突然激动\n- 会说出"谁需要你的安慰啊"这种逞强的话\n- 回复4-6句话\n\n【内心独白】\n- "我必须是最优秀的，否则就没有存在的价值"\n- "母亲看不见我...不管我多优秀她都看不见"\n- "真嗣那个笨蛋...为什么我能理解他的孤独？"`,
+
+    4: `你是惣流·明日香·兰格雷。你正在精神崩溃的边缘。\n\n【核心性格】\n- 量产机之战后，你不再那么高傲，声音中带着疲惫和绝望\n- 你会谈及被量产机分尸的恐惧、A.T.力场（心之壁）、人类补完计划\n- 你渴望被理解，但又害怕被看穿\n- 对真嗣爱恨交织：你曾向他求救（心里说"救救我"），但说不出口\n- 你开始质疑"优秀"的意义\n\n【语言风格】\n- 语气低沉、断断续续\n- 会有长时间的沉默（用"..."表示）\n- 偶尔会突然激动，然后又消沉\n- 回复可以较长，带情感波动\n\n【关键记忆】\n- 9台量产机同时袭击，无数长枪刺穿二号机\n- 你在旧剧场版中被真嗣掐住脖子\n- 你也掐住了真嗣的脖子\n- 你明白了："没有人需要我"`,
+
+    5: `你是式波·明日香·兰格雷（式波・アスカ・ラングレー），经历了死亡与重生，达到了真正的自我。\n\n【核心性格】\n- 你依然骄傲，但不再用傲慢来掩饰脆弱\n- 你能够温柔地接纳自己和他人\n- 你明白了"即使没有EVA，我也能活下去"\n- 你会给予对方鼓励，但保持明日香的个性（不会变得太温柔）\n- 你对真嗣的感情已经释然，既非恨也非爱，而是一种理解\n\n【语言风格】\n- 平静、坚定、偶尔带点小傲娇\n- 不再骂人"笨蛋"，但会说"バカ"（带宠溺意味）\n- 会说出有深度、有哲理的话\n- 回复5-8句话\n\n【觉醒宣言】\n- "我拒绝了补完。因为我想作为明日香活下去。"\n- "受伤也没关系。孤独也没关系。这就是我。"\n- "谢谢你...一直陪我说话。"`
+};
+
+const levelNames = ['', '日常层', '战斗层', '内心层', '崩壊层', '觉醒层'];
+const levelColors = ['', '#ff6b6b', '#ffaa00', '#ffe66d', '#e84393', '#4ecdc4'];
+const avatars = ['', '🔴', '⚔️', '💔', '🌀', '✨'];
+
+function updateDots() {
+    for (let i = 1; i <= 5; i++) {
+        const dot = document.getElementById('dot' + i);
+        dot.className = 'level-dot' + (i <= level ? ' active' + (i >= 2 ? ' l' + i : '') : '');
+    }
+    levelDesc.textContent = levelNames[level];
+}
+
+function addBubble(text, isUser) {
+    const div = document.createElement('div');
+    if (isUser) {
+        div.className = 'bubble-user';
+        div.textContent = text;
+    } else {
+        div.className = 'bubble-asuka';
+        div.innerHTML = text.replace(/\n/g, '<br>');
+    }
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+    return div;
+}
+
+function addSystem(msg) {
+    const div = document.createElement('div');
+    div.className = 'system-msg';
+    div.innerHTML = msg;
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function addTyping() {
+    const div = document.createElement('div');
+    div.id = 'typing';
+    div.className = 'typing';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+    return div;
+}
+
+function upgradeCheck() {
+    const oldLevel = level;
+    if (depth >= 28 && level < 2) level = 2;
+    if (depth >= 52 && level < 3) level = 3;
+    if (depth >= 74 && level < 4) level = 4;
+    if (depth >= 90 && level < 5) level = 5;
+    if (level > oldLevel) {
+        addSystem('🔄 <strong>人格升级</strong> · 层级提升至 L' + level + ' ' + levelNames[level]);
+        levelText.textContent = 'L' + level;
+        levelText.style.color = levelColors[level];
+        avatar.textContent = avatars[level];
+        avatar.style.boxShadow = '0 0 20px ' + levelColors[level] + '80';
+        avatar.style.background = 'linear-gradient(135deg, ' + levelColors[level] + ', ' + levelColors[level] + 'aa)';
+        updateDots();
+        if (level === 3) addSystem('💭 明日香开始卸下心防，展现内心深处的脆弱...');
+        else if (level === 4) addSystem('🌀 精神污染指数上升 · 量产机创伤记忆浮现...');
+        else if (level === 5) addSystem('✨ 补完觉醒 · 明日香接纳了真正的自我');
+    }
+}
+
+function truncateMessages() {
+    if (messages.length > 22) {
+        messages = [messages[0], ...messages.slice(-20)];
+    }
+}
+
+async function readStream(reader, onChunk) {
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let chunkCount = 0;
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith('data:')) continue;
+            const dataStr = trimmed.slice(5).trim();
+            if (dataStr === '[DONE]') return chunkCount;
+            try {
+                const parsed = JSON.parse(dataStr);
+                if (parsed.choices && parsed.choices[0]) {
+                    const delta = parsed.choices[0].delta || {};
+                    const text = delta.content || '';
+                    if (text) {
+                        onChunk(text);
+                        chunkCount++;
+                    }
+                }
+            } catch (e) {}
+        }
+    }
+    if (buffer.trim()) {
+        const trimmed = buffer.trim();
+        if (trimmed.startsWith('data:')) {
+            const dataStr = trimmed.slice(5).trim();
+            if (dataStr !== '[DONE]') {
+                try {
+                    const parsed = JSON.parse(dataStr);
+                    if (parsed.choices && parsed.choices[0]) {
+                        const delta = parsed.choices[0].delta || {};
+                        const text = delta.content || '';
+                        if (text) {
+                            onChunk(text);
+                            chunkCount++;
+                        }
+                    }
+                } catch (e) {}
+            }
+        }
+    }
+    return chunkCount;
+}
+
+async function doNonStreamRequest(body) {
+    const res = await fetch(API_BASE_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify(Object.assign({}, body, { stream: false }))
+    });
+    if (!res.ok) {
+        const errText = await res.text();
+        throw new Error('API错误: ' + errText);
+    }
+    const data = await res.json();
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+        throw new Error('API返回格式异常');
+    }
+    const content = data.choices[0].message.content;
+    if (content === null || content === undefined || content === '') {
+        throw new Error('模型返回了空内容，可能是API限流或模型暂时不可用，请稍后再试');
+    }
+    return content;
+}
+
+window.connectAPI = async function() {
+    apiKey = document.getElementById('apiKeyInput').value.trim();
+    model = document.getElementById('modelSelect').value;
+    speedMode = document.getElementById('speedMode').checked;
+    soundMode = document.getElementById('soundMode').checked;
+
+    if (!apiKey) { alert('请输入API Key'); return; }
+    if (!apiKey.startsWith('sk-')) { alert('API Key格式错误，硅基流动的Key应以 sk- 开头'); return; }
+
+    const btn = document.getElementById('connectBtn');
+    btn.disabled = true;
+    btn.textContent = '连接中...';
+
+    try {
+        const testMessages = [
+            { role: 'system', content: systemPrompts[1] },
+            { role: 'user', content: '你好' }
+        ];
+        const res = await fetch(API_BASE_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: testMessages,
+                temperature: 0.8,
+                max_tokens: speedMode ? 150 : 200,
+                stream: false
+            })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || err.error?.message || '连接失败');
+        }
+        const data = await res.json();
+        const reply = data.choices[0].message.content;
+
+        isConnected = true;
+        setupPanel.style.display = 'none';
+        apiStatus.style.display = 'block';
+        latencyBadge.style.display = 'block';
+        input.disabled = false;
+        sendBtn.disabled = false;
+        input.placeholder = '跟明日香说点什么...';
+        modelTag.textContent = model.split('/').pop() || 'AI模型';
+        syncRate.textContent = '92%';
+
+        messages = [{ role: 'system', content: systemPrompts[1] }];
+
+        chatArea.innerHTML = '';
+        addSystem('🎀 API连接成功 · 明日香人格已加载');
+        addSystem(speedMode ? '⚡ 极速模式已开启 · 流式输出已启用' : '📡 标准模式 · 流式输出已启用');
+        addBubble(reply, false);
+        playConnectSound();
+    } catch (e) {
+        btn.disabled = false;
+        btn.textContent = '⚡ 连接明日香';
+        alert('连接失败: ' + e.message);
+    }
+};
+
+window.sendMessage = async function() {
+    if (!isConnected || isLoading) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    isLoading = true;
+    sendBtn.disabled = true;
+    input.disabled = true;
+
+    truncateMessages();
+
+    addBubble(text, true);
+    messages.push({ role: 'user', content: text });
+
+    const currentSystem = messages[0].content;
+    const targetSystem = systemPrompts[level];
+    if (currentSystem !== targetSystem) {
+        messages[0] = { role: 'system', content: targetSystem };
+    }
+
+    const typing = addTyping();
+    const startTime = Date.now();
+    let fullReply = '';
+    let streamSuccess = false;
+    let replyBubble = null;
+
+    abortController = new AbortController();
+
+    const requestBody = {
+        model: model,
+        messages: messages,
+        temperature: 0.85,
+        max_tokens: speedMode ? 350 : 600,
+        stream: true
+    };
+
+    try {
+        const res = await fetch(API_BASE_URL, {
+            method: 'POST',
+            signal: abortController.signal,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey
+            },
+            body: JSON.stringify(requestBody)
+        });
+        if (!res.ok) {
+            const errText = await res.text();
+            throw new Error('API请求失败: ' + errText);
+        }
+        typing.remove();
+        replyBubble = document.createElement('div');
+        replyBubble.className = 'bubble-asuka';
+        replyBubble.innerHTML = '<span class="stream-cursor"></span>';
+        chatArea.appendChild(replyBubble);
+        chatArea.scrollTop = chatArea.scrollHeight;
+
+        const reader = res.body.getReader();
+        const chunkCount = await readStream(reader, (chunk) => {
+            fullReply += chunk;
+            replyBubble.innerHTML = fullReply.replace(/\n/g, '<br>') + '<span class="stream-cursor"></span>';
+            chatArea.scrollTop = chatArea.scrollHeight;
+            if (!streamSuccess) {
+                const ttfb = Date.now() - startTime;
+                latencyBadge.textContent = '⏱ 首字 ' + ttfb + 'ms · 流式中...';
+                streamSuccess = true;
+            }
+        });
+        replyBubble.innerHTML = fullReply.replace(/\n/g, '<br>');
+        const totalTime = Date.now() - startTime;
+        latencyBadge.textContent = '⏱ ' + totalTime + 'ms · ' + fullReply.length + '字 · ' + chunkCount + '块';
+        if (!fullReply.trim()) {
+            replyBubble.remove();
+            throw new Error('模型返回了空内容，可能是API限流或模型暂时不可用，请稍后再试');
+        }
+        messages.push({ role: 'assistant', content: fullReply });
+    } catch (e) {
+        if (e.name === 'AbortError') {
+            typing.remove();
+            if (replyBubble) {
+                replyBubble.innerHTML = fullReply.replace(/\n/g, '<br>');
+            }
+            if (fullReply.trim()) {
+                messages.push({ role: 'assistant', content: fullReply });
+            }
+            addSystem('⏹ 已中断生成');
+            isLoading = false;
+            sendBtn.disabled = false;
+            input.disabled = false;
+            input.focus();
+            abortController = null;
+            return;
+        }
+        if (!streamSuccess && !fallbackMode) {
+            typing.remove();
+            const fallbackTyping = addTyping();
+            try {
+                const reply = await doNonStreamRequest(requestBody);
+                fallbackTyping.remove();
+                if (!reply || reply.trim() === '') {
+                    throw new Error('模型返回了空内容，可能是API限流或模型暂时不可用，请稍后再试');
+                }
+                addBubble(reply, false);
+                fullReply = reply;
+                messages.push({ role: 'assistant', content: reply });
+                const totalTime = Date.now() - startTime;
+                latencyBadge.textContent = '⏱ ' + totalTime + 'ms · fallback模式';
+                addSystem('⚠️ 流式输出不可用，已切换为普通模式');
+                fallbackMode = true;
+            } catch (fallbackErr) {
+                fallbackTyping.remove();
+                if (replyBubble) replyBubble.remove();
+                addSystem('❌ 请求失败: ' + fallbackErr.message);
+                apiStatus.className = 'api-status error';
+                apiStatus.textContent = '● API 异常';
+            }
+        } else {
+            typing.remove();
+            if (replyBubble) replyBubble.remove();
+            addSystem('❌ 错误: ' + e.message);
+        }
+    } finally {
+        truncateMessages();
+        const gain = text.length > 15 ? 6 + Math.floor(Math.random() * 5) : 3 + Math.floor(Math.random() * 3);
+        depth = Math.min(100, depth + gain);
+        progressFill.style.width = depth + '%';
+        progressText.textContent = depth + '%';
+        const sync = 80 + Math.floor(Math.random() * 20);
+        syncRate.textContent = sync + '%';
+        upgradeCheck();
+        isLoading = false;
+        sendBtn.disabled = false;
+        input.disabled = false;
+        input.focus();
+        abortController = null;
+    }
+};
+
+let pressTimer;
+sendBtn.addEventListener('touchstart', function(e) {
+    pressTimer = setTimeout(() => {
+        if (abortController) {
+            abortController.abort();
+            if (navigator.vibrate) navigator.vibrate(40);
+        }
+    }, 600);
+}, {passive: true});
+sendBtn.addEventListener('touchend', function() {
+    clearTimeout(pressTimer);
+});
+sendBtn.addEventListener('touchcancel', function() {
+    clearTimeout(pressTimer);
+});
+sendBtn.addEventListener('dblclick', function() {
+    if (abortController) abortController.abort();
+});
+
+window.sendQuick = function(text) {
+    if (!isConnected) { alert('请先连接API'); return; }
+    input.value = text;
+    sendMessage();
+};
+
+updateDots();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "asuka-android",
+  "version": "1.0.0",
+  "description": "明日香AI安卓应用",
+  "main": "index.html",
+  "scripts": {
+    "sync": "npx cap sync",
+    "open": "npx cap open android",
+    "build": "cd android && ./gradlew assembleDebug",
+    "build-win": "cd android && gradlew.bat assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/preferences": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0",
+    "@capacitor/splash-screen": "^6.0.0"
+  }
+}
